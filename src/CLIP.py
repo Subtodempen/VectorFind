@@ -25,4 +25,26 @@ class CLIPWrapper:
         image = Image.open(imagePath)
         return image
         
+    def processImage(self, img):
+        try:
+            input = self.processor(
+                images = img,
+                return_tensors="pt", 
+                padding=True
+            )
+            
+        except:
+            logging.error("Failure to process image")
+
+        return input
+
+    def embedImage(self, imgVector):
+        try:
+            with torch.no_grad():
+                features = self.model.get_image_features(**imgVector)
+        
+        except:
+            logging.error("can not embed vector image")
+
+        return features
     

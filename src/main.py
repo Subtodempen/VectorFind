@@ -1,7 +1,5 @@
 from CLIP import CLIPWrapper
 
+clip = CLIPWrapper("openai/clip-vit-base-patch32")
 
-# load model load proccessor
-# First open image using pillow
-# process the image
-# model.get_image_features
+clip.initCLIP()
