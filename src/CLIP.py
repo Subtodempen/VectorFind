@@ -2,13 +2,15 @@ import torch
 from PIL import Image
 from transformers import AutoModel, AutoProcessor
 
-import os.path
+from pathlib import Path
 import logging 
 
 class CLIPWrapper:
     def __init__(self, modelName):
         self.__modelName__ = modelName
-    
+        self.model = None
+        self.processor = None
+ 
     # define the processor and model
     def initCLIP(self):
         self.model = AutoModel.from_pretrained(self.__modelName__, 
@@ -18,9 +20,9 @@ class CLIPWrapper:
         self.processor = AutoProcessor.from_pretrained(self.__modelName__)
 
     def loadImage(self, imagePath):
-        if not os.path.isfile(imagePath):
-            logging.warning("could not open ", imagePath) 
-            return
+        if not Path(imagePath).is_file():
+            logging.warning("could not open " + imagePath) 
+            return None
         
         image = Image.open(imagePath)
         return image
@@ -32,19 +34,24 @@ class CLIPWrapper:
                 return_tensors="pt", 
                 padding=True
             )
-            
-        except:
-            logging.error("Failure to process image")
 
-        return input
+            return input
+            
+        except Exception as e:
+            logging.error("Failure to process image: {e}")
+            return None
 
     def embedImage(self, imgVector):
+        if imgVector is None:
+            logging.error("No image present")
+            return None
+
         try:
             with torch.no_grad():
                 features = self.model.get_image_features(**imgVector)
+            return features
         
         except:
-            logging.error("can not embed vector image")
-
-        return features
+            logging.error("can not embed vector image: {e}")
+            return None
     
