@@ -2,54 +2,82 @@ import pytest
 import psycopg2
 from psycopg2 import sql
 
+import ast
+
 from src.postgres import postgresWrapper
 
 class postgresTest(postgresWrapper):
     def executeSQL(self, sqlQuery):
         self.cursor.execute(sqlQuery)
 
-    def getAllResults(self):
+    def fetchAllResults(self):
         return self.cursor.fetchall()
 
-    #def rollbackAllCommits(self):
+    def getResults(self):
+        self.executeSQL(sql.SQL(
+            "SELECT * FROM {};"
+        ).format(sql.Identifier(self.tableName)))
+
+        results = self.fetchAllResults()
+        results = list(results)
+
+        for i in range(0, len(results)):
+            results[i] = list(results[i])
+            results[i][1] = ast.literal_eval(results[i][1]) # fetch results returns a tuple of ill-formated tuples
+        
+        return results
+
 
 @pytest.fixture
 def dbWrapper():
-    dbObj = postgresTest("testdb")
+    dbWrapper = postgresTest("testdb")
     
-    dbObj.loadConfig("../database.ini")
-    dbObj.connectToDatabase()
+    dbWrapper.loadConfig("../database.ini")
+    dbWrapper.connectToDatabase()
 
-    return dbObj
-    # dbObj.closeConnection
-    # dbObj.ROLLBACK
+    yield dbWrapper
+    
+    dbWrapper.rollbackTransaction()
+    dbWrapper.closeConnection() 
 
 def testAppendValues(dbWrapper):
-    db = dbWrapper
-
     # append *bufferLen* amount of string vector pairs, then assert that they were correctly added
     sampleEmbeddings = [1, 2, 3, 4, 5, 6]
+
+    expectedResults = []
+    actualResults = None
     
     for i in range(0, len(sampleEmbeddings)):
-        db.bufferedAppend("TEST ADDRESS", [sampleEmbeddings[i]]*755)
+        address = "TEST ADDRESS"
+        vector = [sampleEmbeddings[i]]*755
+
+        dbWrapper.bufferedAppend(address, vector) # USAGE: append a vector to database 
+        expectedResults.append([address, vector])
+
+    actualResults = dbWrapper.getResults()
+    
+    assert actualResults == expectedResults
+    dbWrapper.rollbackTransaction()
         
-        query = sql.SQL(
-            "SELECT embedding FROM testdb;"
-        )
-
-        db.executeSQL(query)
-        results = db.getAllResults() 
-
-        # compare results appended to the sampleEmbeddings
-        for i in range(0, len(results)):
-            print(results)
-            assert  == sampleEmbeddings[i]
-
-
+        
 def testBuffer(dbWrapper):
-    # append one address, wont append too database instead will be stored in bufferLen
+    # append one address, wont append to database instead will be stored in bufferLen
     # then clear buffer, test will pass if value is stored in database
-# Can time:w inserting 5 items through flusghing buffer vs calling excecute many
+    # Can time inserting 5 items through flusghing buffer vs calling excecute many
+    address = "TEST ADDRESS NOT REAL"
+    vector = [1] * 755
+    
+    expectedResults = [address, vector]
+    actualResults = None
+
+    dbWrapper.bufferedAppend(address, vector) # USAGE: append a single vector without buffering
+    dbWrapper.flushBuffer()
+    
+    actualResults = dbWrapper.getResults()
+
+    assert actualResults == expectedResults
+    dbWrapper.rollbackTransaction()
+    
 
 
 
