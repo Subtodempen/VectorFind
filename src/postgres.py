@@ -6,18 +6,24 @@ import logging
 from configparser import ConfigParser
 
 class postgresWrapper:
-    def __init__(self):
-        self.tableName = "vecQuery"
+    def __init__(self, tableName):
+        self.tableName = tableName
         self.config = None
         self.connection = None
 
-        self.buffer = []
-        self.bufferLimit = 50
+        self.buffer = ()
+        self.bufferLimit = 5
+
+    def closeConnection(self):
+        if self.connection: # making sure the objects exist before we deconstruct them
+            self.connection.close()
+        
+        if self.cursor:
+            self.cursor.close()
+        # empty buffer
+        self.flushBuffer()
 
 
-    def __del__(self):
-        self.connection.close()
-        self.cursor.close()
 
     def loadConfig(self, configFile = 'database.ini'):
         parser = ConfigParser()
@@ -48,26 +54,55 @@ class postgresWrapper:
 
         self.connection = psycopg2.connect(**self.config)
         self.cursor = self.connection.cursor()
+        
 
         #self.connection.autocommit = True
+    
 
-    def appendAdressAndVec(self, address, imageVec):
-        #https://dev.mysql.com/doc/refman/8.0/en/insert-optimization.html
-        #check buffer to see if its too large
-        #if small enough insert (address, imageVec) tuple to buffer
-        #if too large then clear buffer and excecutemany
-        
-        if len(self.buffer) < self.bufferLimit:
-            self.buffer += (address, imageVec)
+    #check buffer to see if its too large
+    #if small enough insert (address, imageVec) tuple to buffer
+    #if too large then call _appendBuffer which will clear buffer and excecutemany
+    def bufferedAppend(self, address, imageVec):        
+        self.buffer = self.buffer + ((address, imageVec),)
 
-        else:
-            query = sql.SQL("INSERT INTO {} VALUES (%s, %s)")
-                .format(sql.Identifier(self.tableName))
+        if len(self.buffer) >= self.bufferLimit: # if buffer size is over limit then flush it
+            self.flushBuffer()
 
-            excecute_values(self.cursor, 
-                            query, 
-                            self.buffer)
+    def commitTransaction(self):
+        self.connection.commit()
+    
+    def rollbackTransaction(self):
+        self.connection.rollback()
+    
+    #https://dev.mysql.com/doc/refman/8.0/en/insert-optimization.html
+    def _appendBuffer(self):
+        query = sql.SQL(
+            "INSERT INTO {} (address, embedding) VALUES (%s, %s);" # wrap try except warnmiong tho 
+        ).format(sql.Identifier(self.tableName))
 
-            self.buffer = []
+        self.cursor.executemany(query, self.buffer) # use execute_values instead
     
     def getClosestVec(self, imageVec):
+        results = None
+
+        query = sql.SQL(
+            "SELECT * FROM {} ORDER BY embedding <-> %s LIMIT 5;"
+        ).format(sql.Identifier(self.tableName))
+
+        try:
+            self.cursor.execute(query, imageVec)
+            results = self.cursor.fetchall()
+
+        except ProgrammingError:
+            logging.info(
+                "Not able to retrieve closest vector, no address matches image"
+            )
+            
+        return results
+
+    def flushBuffer(self):
+        if not self.buffer:
+            return None
+        
+        self._appendBuffer()
+        self.buffer = ()

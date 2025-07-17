@@ -1,18 +1,20 @@
 from CLIP import CLIPWrapper
 from postgres import postgresWrapper 
 
+def initCLIPWrapper()
+    clip = CLIPWrapper("openai/clip-vit-base-patch32")
+    clip.initCLIP()
+    
+    return clip
 
-if __name__ == "__main__":
-    db = postgresWrapper()    
+def initDBWrapper():
+    db = postgresWrapper("vecquery")   
     db.loadConfig('../database.ini')   
     db.connectToDatabase()
 
-    #clip = CLIPWrapper("openai/clip-vit-base-patch32")
+    return db    
 
-    #clip.initCLIP()
-    #image = clip.loadImage("Moon.png")
-    #imageVec = clip.processImage(image);
-
-    #print(clip.embedImage(imageVec))
-
+if __name__ == "__main__":
+    initCLIPWrapper()
+    initDBWrapper()
     
