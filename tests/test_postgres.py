@@ -18,8 +18,7 @@ class postgresTest(postgresWrapper):
             "SELECT * FROM {};"
         ).format(sql.Identifier(self.tableName)))
 
-        results = self.fetchAllResults()
-        results = list(results)
+        results = self.fetchAllResults() 
 
         for i in range(0, len(results)):
             results[i] = list(results[i])
@@ -42,7 +41,7 @@ def dbWrapper():
 
 def testAppendValues(dbWrapper):
     # append *bufferLen* amount of string vector pairs, then assert that they were correctly added
-    sampleEmbeddings = [1, 2, 3, 4, 5, 6]
+    sampleEmbeddings = [1, 2, 39201, 4, 5]
 
     expectedResults = []
     actualResults = None
@@ -55,7 +54,7 @@ def testAppendValues(dbWrapper):
         expectedResults.append([address, vector])
 
     actualResults = dbWrapper.getResults()
-    
+
     assert actualResults == expectedResults
     dbWrapper.rollbackTransaction()
         
@@ -67,7 +66,7 @@ def testBuffer(dbWrapper):
     address = "TEST ADDRESS NOT REAL"
     vector = [1] * 755
     
-    expectedResults = [address, vector]
+    expectedResults = [[address, vector]]
     actualResults = None
 
     dbWrapper.bufferedAppend(address, vector) # USAGE: append a single vector without buffering
