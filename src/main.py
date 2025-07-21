@@ -48,13 +48,17 @@ if __name__ == "__main__":
 
     args = argParser.parse_args()
     
+    tensor = processAndEmbedImage(CLIPWrapper, args.imageFile)
+    imageVec = convertTorchToNumPy(tensor)
+     
     if args.add:
         # processImage
-        # Then we append to the database
-        tensor = processAndEmbedImage(CLIPWrapper, args.imageFile)
-        imageVec = convertTorchToNumPy(tensor)
-        
+        # Then we append to the database   
         insertAddressVec(dbWrapper, args.address, imageVec.tolist()[0])
         
-    #elif args.query:
+    elif args.query:
         # or we can query an image....
+        # so search the database for nearest vec querys to the image
+        closest = dbWrapper.getClosestVec(imageVec)
+        
+
