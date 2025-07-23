@@ -1,5 +1,3 @@
 # Write a docker file
-# Finish web scraper
-# write tests for scraper and app in general
-# Change execute many to execute vaslues or vicer versa on postgres file 83
-# change Buffer to list and run tuple() when needing to again on the postgres file
+# Finish web scraper for rightmove
+# write tests for scraper and app in general and CLIP
