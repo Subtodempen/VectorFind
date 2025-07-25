@@ -81,11 +81,3 @@ def _writeImageIndex(url, imgIndex, indexLocation):
 
     return url
 
-driver = webdriver.Chrome()
-driver.get("https://www.rightmove.co.uk/house-prices/details/db063059-7324-4167-9cf6-8b5438a680ef")
-
-htmlDoc = driver.page_source
-#check if url is valid
-print(parseBasicPage(htmlDoc))
-
-driver.quit()
