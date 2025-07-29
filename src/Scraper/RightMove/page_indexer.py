@@ -25,4 +25,4 @@ class Crawler:
 
         return links
 
-    
+    def incPageIndex()   
