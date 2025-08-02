@@ -26,10 +26,19 @@ def testLinkRetrieval(crawlerWrapper):
         assert expected in actualResults
 
 
-def testPageCrawl():
-    pass
+def testPageIncrementer(crawlerWrapper):
+    startUrl = "https://www.rightmove.co.uk/house-prices/london.html?pageNumber=1"
+    nextUrl = "https://www.rightmove.co.uk/house-prices/london.html?pageNumber=2"
+    
+    fringeCaseUrl = "https://www.rightmove.co.uk/house-prices/london.html"
+
+    # the fringeCaserl is the first url, so when incremented shld return the second one
+    assert crawlerWrapper._incrementPageUrl(startUrl) == nextUrl
+    assert crawlerWrapper._incrementPageUrl(fringeCaseUrl) == nextUrl
+
 def testStateLoad():
     pass
+
 def testStateSave():
     pass
 
