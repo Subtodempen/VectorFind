@@ -4,13 +4,60 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 
 import logging
+import json
 
+class JSONStateHandler:
+    def __init__(self, crawlerStateClass, fName):
+        self.jsonFName = fName
+        self.crawlerState = crawlerStateClass
+        
+    def fileErrorHandle(fileFunc):
+        def tryExcept(self):     
+            try:
+                fileFunc(self)    
+        
+            except FileNotFoundError:
+                logging.warning("Can not find JSON save file, file not found.")
+
+            except PermissionError:
+                logging.warning("Do not have permission to access file.")
+
+            except Exception as e:
+                logging.warning("File not saved to, can not save state. Due to: %s", e)
+        
+        return tryExcept
+
+    @fileErrorHandle
+    def loadCrawlState(self):
+        with open(self.jsonFName, mode='r', encoding="utf-8") as jsonRead:
+            rawJson = json.load(jsonRead)
+        
+        crawlerState.currPage = rawJson["currPage"]
+        crawlerState.crawledPages = rawJson["crawledPages"]
+    
+    @fileErrorHandle
+    def saveCrawlState(self): 
+        jsonFormat = {
+            "currPage": self.crawlerState.currPage,
+            "crawledPages": self.crawlerState.crawledPages
+        }
+
+        with open(self.jsonFName, mode='w', encoding='utf-8') as jsonWrite:
+            json.dump(jsonFormat, jsonWrite) 
+       
 
 class Crawler:
-    def __init__(self):
-        self.crawledUrls = []   
+    def __init__(self, jsonFName):
         self.currPage = None
+        self.crawledPages = []
 
+        if jsonFName is None:
+            self.JSONHandler = None  
+
+        else:
+            self.JSONHandler = JSONStateHandler(self, jsonFName)
+        
+    
     def _getHtml(self, url):
         session = requests.Session()
         
@@ -18,6 +65,7 @@ class Crawler:
         MAX_RETRY = 5
         BACK_OFF = 1
         ERROR_CODES = [500, 502, 504]
+        TIMEOUT = 10
 
         retries = Retry(
             total=MAX_RETRY, 
@@ -27,23 +75,22 @@ class Crawler:
             
 
         session.mount('http://', HTTPAdapter(max_retries=retries))
-        session.mount('http://', HTTPAdapter(max_retries=retries))
 
         try:
-            response = session.get(url)
+            response = session.get(url, timeout=TIMEOUT)
 
         except requests.exceptions.TooManyRedirects:
             logging.warning("invalid URL, base crawler URL is invalid")
             return None
 
         except requests.exceptions.RequestException as e:
-            logging.error("Catostrophic request error" + e)
+            logging.error("Catostrophic request error: %s", e)
             return None
         
         return response.text
            
     def _initSoupEngine(self, htmlDoc):
-        return BeautifulSoup(htmlDoc)
+        return BeautifulSoup(htmlDoc, "html.parser")
 
     # find all <'a'> attriubuytes with data-testid = propertyCard
     def getLinksFromPage(self, pageUrl):
@@ -76,19 +123,21 @@ class Crawler:
         return pageUrl.replace(prevPageNumber, str(nextPageNumber))
 
     
-    def crawlPages(self):
-        self.currPage = _incrementPageUrl(self.currPage)
-
-        self.crawledUrls += self.currPage
-        return getLinksFromPage(self.currPage)
-
-    def loadCrawlState(self):
-        pass
-
-    def saveCrawlState(self):
-        pass
-
-
-
+    def crawlPage(self):
+        if self.currPage is None:
+            logging.error("JSON state has not been loaded")
+            return None
+        
+        self.currPage = self._incrementPageUrl(self.currPage)
+        foundLinks = self.getLinksFromPage(self.currPage)
+        
+        # make sure pageLinks have not already been crawled 
+        for link in foundLinks:
+            if link in self.crawledPages:
+                # link has allready been crawled
+                foundLinks.remove(link) 
+        
+        self.crawledPages += foundLinks
+        return foundLinks 
 
 
