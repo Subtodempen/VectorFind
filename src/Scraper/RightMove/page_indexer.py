@@ -6,7 +6,7 @@ from requests.adapters import HTTPAdapter, Retry
 import logging
 import json
 
-class JSONStateHandler:
+class JSONHandler:
     def __init__(self, crawlerStateClass, fName):
         self.jsonFName = fName
         self.crawlerState = crawlerStateClass
@@ -32,8 +32,8 @@ class JSONStateHandler:
         with open(self.jsonFName, mode='r', encoding="utf-8") as jsonRead:
             rawJson = json.load(jsonRead)
         
-        crawlerState.currPage = rawJson["currPage"]
-        crawlerState.crawledPages = rawJson["crawledPages"]
+        self.crawlerState.currPage = rawJson["currPage"]
+        self.crawlerState.crawledPages = rawJson["crawledPages"]
     
     @fileErrorHandle
     def saveCrawlState(self): 
@@ -55,12 +55,20 @@ class Crawler:
             self.JSONHandler = None  
 
         else:
-            self.JSONHandler = JSONStateHandler(self, jsonFName)
+            self.JSONHandler = JSONHandler(self, jsonFName)
         
     
     def _getHtml(self, url):
         session = requests.Session()
-        
+        genericHeader = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Referer": "https://www.google.com/",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+        }        
+
         # construct a request tiemout loop and try 5 more 
         MAX_RETRY = 5
         BACK_OFF = 1
@@ -77,7 +85,7 @@ class Crawler:
         session.mount('http://', HTTPAdapter(max_retries=retries))
 
         try:
-            response = session.get(url, timeout=TIMEOUT)
+            response = session.get(url, timeout=TIMEOUT, headers=genericHeader)
 
         except requests.exceptions.TooManyRedirects:
             logging.warning("invalid URL, base crawler URL is invalid")
