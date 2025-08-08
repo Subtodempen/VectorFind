@@ -11,7 +11,7 @@ class postgresWrapper:
         self.config = None
         self.connection = None
 
-        self.buffer = ()
+        self.buffer = []
         self.bufferLimit = 5
 
     def closeConnection(self):
@@ -63,7 +63,7 @@ class postgresWrapper:
     #if small enough insert (address, imageVec) tuple to buffer
     #if too large then call _appendBuffer which will clear buffer and excecutemany
     def bufferedAppend(self, address, imageVec):        
-        self.buffer = self.buffer + ((address, imageVec),)
+        self.buffer.append(tuple((address, imageVec)))
 
         if len(self.buffer) >= self.bufferLimit: # if buffer size is over limit then flush it
             self.flushBuffer()
@@ -77,10 +77,10 @@ class postgresWrapper:
     #https://dev.mysql.com/doc/refman/8.0/en/insert-optimization.html
     def _appendBuffer(self):
         query = sql.SQL(
-            "INSERT INTO {} (address, embedding) VALUES (%s, %s);" # wrap try except warnmiong tho 
+            "INSERT INTO {} (address, embedding) VALUES %s;" # wrap try except warnmiong tho 
         ).format(sql.Identifier(self.tableName))
 
-        self.cursor.executemany(query, self.buffer) # use execute_values instead
+        execute_values(self.cursor, query, self.buffer) # use execute_values instead
     
     def getClosestVec(self, imageVec):
         results = None
