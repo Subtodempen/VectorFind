@@ -19,6 +19,9 @@ def parseBasicPage(pageHTML) -> tuple[str, list]:
     imagesLeft = True
     address = soupEngine.find('h1')
 
+    if address is None or nextImgUrl is None:
+        return None
+
     # first image is a url like http://rightmove/image__000 indexed with 0s so we need to keep updating the index until their are no images left and we reach an error
     nextImgUrl = _getFirstImgUrl(nextImgUrl)
 
