@@ -26,7 +26,7 @@ def processAndEmbedImage(CLIPWrapper, path):
 
 def convertTorchToNumPy(tensor):
     tensor32 = tensor.to(torch.float32)
-    return tensor32.numpy()
+    return tensor32.numpy().tolist()[0]
 
 def insertAddressVec(dbWrapper, imageVec, address):
     dbWrapper.bufferedAppend(imageVec, address)
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     if args.add:
         # processImage
         # Then we append to the database   
-        insertAddressVec(dbWrapper, args.address, imageVec.tolist()[0])
+        insertAddressVec(dbWrapper, args.address, imageVec)
         
     elif args.query:
         # or we can query an image....

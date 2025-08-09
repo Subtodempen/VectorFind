@@ -12,12 +12,13 @@ class CLIPWrapper:
         self.processor = None
  
     # define the processor and model
-    def initCLIP(self):
+    def initClip(self):
         self.model = AutoModel.from_pretrained(self.__modelName__, 
                                                torch_dtype=torch.bfloat16, 
                                                attn_implementation="sdpa")
         
         self.processor = AutoProcessor.from_pretrained(self.__modelName__)
+        
 
     def loadImage(self, imagePath):
         if not Path(imagePath).is_file():
@@ -41,7 +42,7 @@ class CLIPWrapper:
             logging.error("Failure to process image: {e}")
             return None
 
-    def embedImage(self, imgVector):
+    def embedImg(self, imgVector):
         if imgVector is None:
             logging.error("No image present")
             return None

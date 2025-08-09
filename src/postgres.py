@@ -46,15 +46,10 @@ class postgresWrapper:
     
     def connectToDatabase(self):
         if self.config == None:
-            logging.error(
-                'Configuration not loaded can not connect'
-            )
-            
-            return None
+            raise RuntimeError("Can not load configuration") 
 
         self.connection = psycopg2.connect(**self.config)
         self.cursor = self.connection.cursor()
-        
 
         #self.connection.autocommit = True
     
@@ -86,16 +81,16 @@ class postgresWrapper:
         results = None
 
         query = sql.SQL(
-            "SELECT * FROM {} ORDER BY embedding <-> %s LIMIT 5;"
+            "SELECT * FROM {} ORDER BY embedding <-> %s::vector LIMIT 5;"
         ).format(sql.Identifier(self.tableName))
-
+        
         try:
-            self.cursor.execute(query, imageVec)
+            self.cursor.execute(query, (imageVec,))
             results = self.cursor.fetchall()
 
-        except ProgrammingError:
-            logging.info(
-                "Not able to retrieve closest vector, no address matches image"
+        except Exception as e:
+            logging.warning(
+                "Not able to retrieve closest vector, %s", e
             )
             
         return results
@@ -105,4 +100,4 @@ class postgresWrapper:
             return None
         
         self._appendBuffer()
-        self.buffer = ()
+        self.buffer = []

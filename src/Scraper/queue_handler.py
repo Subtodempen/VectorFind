@@ -18,6 +18,9 @@ class queue_handler:
          # continuesly loop and append the queue with crawled pages :)
             foundLinks = self.crawler.crawlPage()
             
+            if foundLinks is None:
+                continue
+
             for link in foundLinks:
                 self.queue.put(link)
 
@@ -31,7 +34,7 @@ class queue_handler:
 
             htmlDoc = self.crawler._getHtml(page)
             result = self.pageScraperFunction(htmlDoc)
-            print(result)
+
             self.resultsList.append(result)
 
     def constructQueueHandler(self, n):
@@ -46,6 +49,8 @@ class queue_handler:
 
         producerThread.start()
         consumerThread.start()
+        
+        time.sleep(5)
         
 
         stopFlag1.set()
