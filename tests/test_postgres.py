@@ -4,7 +4,7 @@ from psycopg2 import sql
 
 import ast
 
-from src.postgres import postgresWrapper
+from src.modules.postgres import postgresWrapper
 
 class postgresTest(postgresWrapper):
     def executeSQL(self, sqlQuery):

@@ -1,4 +1,5 @@
 # Write a docker file
+# add a sample database in docker file that will have test images
 # Finish web scraper for rightmove
 # write tests for scraper and app in general and CLIP
 # Write State logic for RIGHTMOVE crawler, maybe make state logic inherited
